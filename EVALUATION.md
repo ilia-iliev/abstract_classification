@@ -1,28 +1,18 @@
-# Model evaluation
+# Final-holdout evaluation
 
-The active model is evaluated on a disjoint, natural-distribution test split. The test set has also been used to compare experiments, so it is not an untouched final estimate.
+All model choices, including hyperparameters and per-label thresholds, were selected using the training and validation splits. The four resulting models were then frozen and evaluated once on a disjoint 20,000-record final holdout. No model was retrained, retuned, or otherwise changed after this evaluation.
 
 ## Overall results
 
-| Split | Accuracy | Micro F1 | Macro F1 | Weighted F1 |
+| Model | Macro F1 | Micro F1 | Exact match | Top-1 |
 |---|---:|---:|---:|---:|
-| Validation | 0.9070 | 0.9456 | 0.7752 | 0.9450 |
-| Test | 0.9048 | 0.9437 | 0.7662 | 0.9427 |
+| Qwen3-Embedding-0.6B | **0.8087** | **0.9526** | **0.9174** | **0.9723** |
+| embeddinggemma-300m | 0.7998 | 0.9506 | 0.9152 | 0.9684 |
+| ModernBERT-base | 0.7895 | 0.9467 | 0.9091 | 0.9648 |
+| bert-base-uncased | 0.7878 | 0.9457 | 0.9078 | 0.9624 |
 
-The test macro-F1 target (>0.76) is met.
+Confidence intervals resample holdout examples only; the models were each trained once, so they do not represent variation between training runs. Full metrics, predictions, and confidence intervals are in `artifacts/final-holdout-evaluation/report.json`.
 
-## Test results by category
+## LLM comparison
 
-| Category | Support | Precision | Recall | F1 |
-|---|---:|---:|---:|---:|
-| Biology | 441 | 0.7619 | 0.5805 | 0.6589 |
-| Chemistry | 209 | 0.5000 | 0.5120 | 0.5059 |
-| Computer science | 7,658 | 0.9449 | 0.9521 | 0.9485 |
-| Physics | 11,990 | 0.9683 | 0.9741 | 0.9712 |
-| Social sciences | 865 | 0.7726 | 0.7225 | 0.7467 |
-
-Chemistry is the weakest label, consistent with its frequent secondary cross-listing and overlap with physics.
-
-## Comparison
-
-The promoted formula-token model reaches test macro F1 0.7662, improving slightly on the previous active model (0.7650). Full metrics and settings are in `artifacts/model/metadata.json`.
+A separate single-label prompt experiment ran Qwen3.8-27B in FP8 on the same 20,000-record holdout. A prediction counted as correct when it matched any expected broad label. It achieved 92.38% top-1 accuracy in about 1 hour 30 minutes, compared with 96.24% for fine-tuned BERT. The LLM experiment did not produce multi-label probabilities, so macro and micro F1 are not reported for it. Results are in `logs/qwen-llm-final-holdout-summary.json`.

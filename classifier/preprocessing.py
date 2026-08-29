@@ -11,7 +11,7 @@ from pylatexenc.latexwalker import (
 )
 
 MAX_INPUT_LENGTH = 512
-# Kept as an alias while callers migrate to the benchmark terminology.
+# Kept as an alias while callers migrate to the context-length terminology.
 MAX_CONTEXT_LENGTH = MAX_INPUT_LENGTH
 MAX_INLINE_MATH_LENGTH = 24
 FORMULA_TOKEN = "<FORMULA>"

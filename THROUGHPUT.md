@@ -1,4 +1,8 @@
-# Throughput protocol
+# Throughput
+
+All four fully fine-tuned models were measured on the same machine with NVIDIA GeForce RTX 3090 GPUs. The complete measurements are in `artifacts/throughput/report.json`.
+
+## Protocol
 
 Use the frozen final-holdout texts and the frozen preprocessing and tokenizer from each model artifact. Run all models on the same machine and record GPU model, CPU, driver, CUDA, PyTorch, precision policy, and dependency versions.
 
@@ -16,7 +20,7 @@ Run after the final-holdout report exists:
 
 ```bash
 uv run --extra training python -m scripts.measure_throughput \
-  data/arxiv-benchmark-snapshot.json artifacts/frozen-experiment \
+  data/arxiv-snapshot.json artifacts/frozen-experiment \
   --holdout-report artifacts/final-holdout-evaluation \
   --output artifacts/throughput
 ```

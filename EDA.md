@@ -17,7 +17,7 @@ The broad mapping is: `q-bio` → biology; `physics.chem-ph` → chemistry; `cs`
 
 ## Label distribution
 
-Shares use mapped records and exceed 100% because papers may have several labels.
+Shares use mapped records and exceed 100% because papers may have several labels. These five labels are project-defined groupings of Cornell's arXiv subject codes, not labels supplied directly by Cornell.
 
 | Label | Records | Share |
 |---|---:|---:|
@@ -29,11 +29,13 @@ Shares use mapped records and exceed 100% because papers may have several labels
 
 Most mapped records have one label (2,501,179); 142,928 have two or more. Chemistry is particularly noisy: 47.3% of its records are secondary cross-lists, usually from physics-adjacent subjects. This limits what can be inferred from the abstract alone.
 
+The physics count was independently checked against the raw subject codes. Of all 3,141,764 snapshot records, 1,511,713 (48.12%) have a primary physics-archive category and 1,591,437 (50.65%) have physics as either a primary category or a cross-list. The reported 60.19% is higher because its denominator excludes 497,657 unmapped records, mostly mathematics. The largest primary physics archives are condensed matter (353,969), astrophysics (341,102), the `physics.*` archive (200,896), high-energy phenomenology (144,286), and quantum physics (135,288). The high share is therefore present in the snapshot rather than caused by an accidental category match.
+
 ## Input preparation
 
-A seeded sample of 10,000 mapped abstracts found formulas in 25.13% of records. The production preprocessor keeps short inline math, replaces longer or display formulas with `formula`, strips formatting wrappers, and preserves ordinary percentages. This keeps the text vocabulary-safe and avoids the earlier bug that treated `%` as a TeX comment.
+A seeded sample of 10,000 mapped abstracts found formulas in 25.13% of records. The production preprocessor keeps short inline math, replaces longer or display formulas with the dedicated `<FORMULA>` token, strips formatting wrappers, and preserves ordinary percentages. This keeps the text vocabulary-safe and avoids the earlier bug that treated `%` as a TeX comment.
 
-BERT's 512-token context covers 99.51% of raw sampled abstracts and 99.97% after normalization.
+For BERT, normalization reduced the median from 217 to 207 tokens and the 95th percentile from 385 to 357. The share beyond the 512-token context fell from 0.49% to 0.03%, and the normalized sample produced no `[UNK]` tokens.
 
 ## Implications
 
