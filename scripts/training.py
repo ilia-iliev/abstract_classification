@@ -12,10 +12,10 @@ def train_one_epoch(model, data, optimizer, scheduler, device, gradient_accumula
     optimizer.zero_grad(set_to_none=True)
     total_loss = 0.0
     batches = len(data)
-    for batch_index, (tokens, targets) in enumerate(data, 1):
+    for batch_index, (tokens, weighted_labels) in enumerate(data, 1):
         logits = model(**{key: value.to(device) for key, value in tokens.items()})
         loss = weighted_multilabel_loss(
-            logits, targets.to(device), np.ones(label_count, dtype=np.float32)
+            logits, weighted_labels.to(device), np.ones(label_count, dtype=np.float32)
         )
         total_loss += loss.item()
         remainder = batches % gradient_accumulation

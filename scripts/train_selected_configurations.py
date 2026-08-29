@@ -17,7 +17,7 @@ import torch
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
 from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec
-from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_TARGET, register_formula_token
+from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_LOSS_WEIGHT, register_formula_token
 from scripts.artifacts import write_json
 from scripts.data import LABELS
 from scripts.run_frozen_probes import arrays, load_splits, logits_and_probabilities
@@ -26,7 +26,7 @@ from scripts.train import encoded_dataset, metrics, tune_thresholds
 
 STAGE = "selected_configuration_training"
 CHECKPOINT_SELECTION_RULE = "final checkpoint after the required single epoch"
-LOSS_DESCRIPTION = "weighted_multilabel_loss with unit positive weights"
+LOSS_DESCRIPTION = "binary cross-entropy with half-weighted secondary positives"
 PRECISION_POLICY = "float32"
 GRADIENT_CLIP_NORM = 1.0
 TUNING_TRIAL_BUDGET = 16
@@ -88,7 +88,7 @@ def validate_tuning_configuration(tuning, dataset_metadata):
         "split_seed": dataset_metadata["split_seed"],
         "epochs_per_trial": 1,
         "loss": LOSS_DESCRIPTION,
-        "secondary_label_target": SECONDARY_LABEL_TARGET,
+        "secondary_label_loss_weight": SECONDARY_LABEL_LOSS_WEIGHT,
         "max_length": MAX_CONTEXT_LENGTH,
         "formula_token": FORMULA_TOKEN,
         "preprocessing": PREPROCESSING_VERSION,
@@ -104,7 +104,7 @@ def validate_tuning_configuration(tuning, dataset_metadata):
 
 def train_model(args, model_name, dataset, dataset_metadata, tuning_configuration, output):
     summary, params, summary_path = selected_parameters(args.tuning, model_name)
-    train_ids, train_texts, train_targets = arrays(dataset["training"], "targets")
+    train_ids, train_texts, train_weighted_labels = arrays(dataset["training"], "weighted_labels")
     validation_ids, validation_texts, validation_labels = arrays(dataset["validation"], "labels")
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -115,7 +115,7 @@ def train_model(args, model_name, dataset, dataset_metadata, tuning_configuratio
     model.backbone.resize_token_embeddings(len(tokenizer))
     model.to(device)
     generator = torch.Generator().manual_seed(args.seed)
-    training = encoded_dataset(tokenizer, train_texts, train_targets, tuning_configuration["batch_size"], shuffle=True, generator=generator)
+    training = encoded_dataset(tokenizer, train_texts, train_weighted_labels, tuning_configuration["batch_size"], shuffle=True, generator=generator)
     validation = encoded_dataset(tokenizer, validation_texts, validation_labels, tuning_configuration["batch_size"])
     gradient_accumulation = tuning_configuration["gradient_accumulation"]
     total_steps = math.ceil(len(training) / gradient_accumulation)
@@ -167,7 +167,7 @@ def train_model(args, model_name, dataset, dataset_metadata, tuning_configuratio
         "gradient_accumulation": gradient_accumulation,
         "effective_batch_size": tuning_configuration["effective_batch_size"],
         "loss": LOSS_DESCRIPTION,
-        "secondary_label_target": SECONDARY_LABEL_TARGET,
+        "secondary_label_loss_weight": SECONDARY_LABEL_LOSS_WEIGHT,
         "max_length": MAX_CONTEXT_LENGTH,
         "formula_token": FORMULA_TOKEN,
         "preprocessing": PREPROCESSING_VERSION,

@@ -1,5 +1,7 @@
 # Experiment design
 
+This records the design used for the completed experiment. The implementation has since evolved and is not intended as an exact replay of the original runs.
+
 Four pretrained backbones were trained and compared for five-label arXiv abstract classification.
 
 | Split | Records | Use |

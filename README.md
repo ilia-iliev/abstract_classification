@@ -1,6 +1,6 @@
 # arXiv abstract classifier
 
-Text classifier for abstracts. The repository includes training and evaluation and Django REST API.
+Text classifier for abstracts. The repository includes training and evaluation code and a Django REST API. The [experiment write-up](https://ilia.foo/blog/old_school_text_classification) explains the analysis and model comparison.
 
 ## Quick start
 
@@ -46,6 +46,10 @@ Four fully fine-tuned models were evaluated once on the untouched 20,000-record 
 | embeddinggemma-300m | 0.7998 | 0.9506 | 0.9152 | 0.9684 | 1.25 GB |
 | ModernBERT-base | 0.7895 | 0.9467 | 0.9091 | 0.9648 | 0.60 GB |
 | bert-base-uncased | 0.7878 | 0.9457 | 0.9078 | 0.9624 | **0.44 GB** |
+
+These are historical measurements retained from the experiment logs. The code evolved after the runs, and raw logs, predictions, and intermediate artifacts are not included. The published model weights are downloaded from Hugging Face by the setup command above.
+
+The checked-in experiment notes cover [EDA](EDA.md), [preprocessing](PREPROCESSING.md), [training](TRAINING.md), [evaluation](EVALUATION.md), and [throughput methodology](THROUGHPUT.md).
 
 ## Data and training
 

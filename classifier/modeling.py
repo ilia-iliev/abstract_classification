@@ -93,12 +93,14 @@ class MultilabelClassifier(nn.Module):
         return model
 
 
-def weighted_multilabel_loss(logits, targets, positive_weights):
-    """Apply positive weighting while preserving soft secondary-label weights."""
-    labels = targets.ceil()
+def weighted_multilabel_loss(logits, weighted_labels, positive_weights):
+    """Downweight secondary positives while keeping them positive labels."""
+    labels = weighted_labels.ceil()
     weights = torch.as_tensor(positive_weights, dtype=logits.dtype, device=logits.device)
     values = nn.functional.binary_cross_entropy_with_logits(
         logits, labels, pos_weight=weights, reduction="none"
     )
-    label_weights = torch.where(labels > 0, targets, torch.ones_like(targets))
-    return (values * label_weights).mean()
+    observation_weights = torch.where(
+        labels > 0, weighted_labels, torch.ones_like(weighted_labels)
+    )
+    return (values * observation_weights).mean()

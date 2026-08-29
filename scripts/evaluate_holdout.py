@@ -193,12 +193,12 @@ def predict(model_directory, rows, batch_size, device):
 
 def subgroup_masks(rows, token_lengths):
     labels = np.asarray([row["labels"] for row in rows], dtype=int)
-    targets = np.asarray([row["targets"] for row in rows], dtype=float)
+    weighted_labels = np.asarray([row["weighted_labels"] for row in rows], dtype=float)
     formula_counts = np.asarray([row["text"].count(FORMULA_TOKEN) for row in rows])
     word_counts = np.asarray([len(row["text"].split()) for row in rows])
     return {
-        "primary_label_decisions": targets == 1.0,
-        "secondary_only_label_decisions": targets == 0.5,
+        "primary_label_decisions": weighted_labels == 1.0,
+        "secondary_only_label_decisions": weighted_labels == 0.5,
         "chemistry_physics_overlap": (labels[:, 1] & labels[:, 3]).astype(bool),
         "multilabel_records": labels.sum(axis=1) > 1,
         "single_label_records": labels.sum(axis=1) == 1,

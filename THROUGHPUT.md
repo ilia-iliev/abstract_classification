@@ -1,28 +1,17 @@
-# Throughput
+# Throughput methodology
 
-All four fully fine-tuned models were measured on the same machine with NVIDIA GeForce RTX 3090 GPUs. The complete measurements are in `artifacts/throughput/report.json`.
+All four fully fine-tuned models were measured on the same machine with an NVIDIA GeForce RTX 3090. This page records the protocol used for the historical measurements; the raw benchmark output is not included in the repository.
 
-## Protocol
+- Use the same held-out abstracts and each model's matching preprocessing and tokenizer.
+- Bucket texts by tokenized length: 1–128, 129–256, 257–511, and truncated at 512.
+- Use 20 warm-up iterations and 100 measured iterations for every model and batch size.
+- Synchronize CUDA immediately before and after timed GPU inference.
+- Measure batch sizes 1 and 32 separately on one GPU.
+- Separate preprocessing and tokenization time from model time and end-to-end time.
+- Record p50, p95, and p99 latency, batch-32 abstracts per second, and peak inference VRAM.
+- Repeat each measurement five times and use the median, with minimum and maximum as dispersion.
+- Measure CPU batch-1 using the same inputs and timing boundaries.
+- Measure cold loading in a fresh process.
+- Calculate artifact size from the complete serving model.
 
-Use the frozen final-holdout texts and the frozen preprocessing and tokenizer from each model artifact. Run all models on the same machine and record GPU model, CPU, driver, CUDA, PyTorch, precision policy, and dependency versions.
-
-- Bucket texts by the tokenized 512-token limit: 1–128, 129–256, 257–511, and truncated (512).
-- Use the same fixed warm-up count (20) and measured iteration count (100) for every model and batch size.
-- Synchronize CUDA immediately before and after every timed GPU iteration. Do not include model loading in warm inference timings.
-- Measure batch 1 and batch 32 separately on one GPU. Report p50, p95, and p99 latency; batch-32 abstracts/second; and peak inference VRAM.
-- For each batch size, report tokenization-only, model-only, and end-to-end timings. End-to-end includes preprocessing and tokenization.
-- Repeat every measurement five times and report the median and dispersion (minimum and maximum).
-- Measure CPU batch-1 with the same texts, warm-up, iteration count, and timing boundaries.
-- Measure cold-load time in a fresh process, and report artifact size as the sum of frozen model-artifact files.
-- Record single-GPU training examples/second, final training wall time, GPU-hours, and peak training VRAM from the frozen training artifact. Multi-GPU training, if used, is reported separately and never replaces the single-GPU inference result.
-
-Run after the final-holdout report exists:
-
-```bash
-uv run --extra training python -m scripts.measure_throughput \
-  data/arxiv-snapshot.json artifacts/frozen-experiment \
-  --holdout-report artifacts/final-holdout-evaluation \
-  --output artifacts/throughput
-```
-
-The command refuses to overwrite output and verifies the holdout report, frozen artifact hashes, snapshot, and frozen measurement source. It records every repeat as well as median, minimum, and maximum summaries.
+Model loading was excluded from warm inference timings and included only in the cold-load measurement. Multi-GPU training measurements were kept separate from single-GPU inference results.

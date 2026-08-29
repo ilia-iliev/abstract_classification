@@ -8,8 +8,8 @@ import numpy as np
 
 from classifier.labels import LABELS
 from classifier.preprocessing import (
-    PRIMARY_LABEL_TARGET,
-    SECONDARY_LABEL_TARGET,
+    PRIMARY_LABEL_LOSS_WEIGHT,
+    SECONDARY_LABEL_LOSS_WEIGHT,
     prepare_abstract,
 )
 
@@ -118,7 +118,7 @@ def load_manifest_examples(snapshot, manifest_directory, split):
             "id": record_id,
             "text": normalized,
             "labels": labels,
-            "targets": build_targets([labels], [primary])[0].tolist(),
+            "weighted_labels": build_weighted_labels([labels], [primary])[0].tolist(),
         }
     missing = set(expected) - set(examples)
     if missing:
@@ -126,8 +126,8 @@ def load_manifest_examples(snapshot, manifest_directory, split):
     return [examples[row["id"]] for row in manifest]
 
 
-def build_targets(labels, primary_labels):
-    """Build frozen multilabel targets: primary 1.0, secondary-only 0.5."""
+def build_weighted_labels(labels, primary_labels):
+    """Encode positive labels with their primary or secondary loss weight."""
     labels = np.asarray(labels, dtype=np.float32)
     primary_labels = np.asarray(primary_labels, dtype=np.float32)
     if labels.shape != primary_labels.shape:
@@ -137,8 +137,8 @@ def build_targets(labels, primary_labels):
     secondary = (labels > 0) & (primary_labels == 0)
     return np.where(
         secondary,
-        SECONDARY_LABEL_TARGET,
-        np.where(labels > 0, PRIMARY_LABEL_TARGET, 0.0),
+        SECONDARY_LABEL_LOSS_WEIGHT,
+        np.where(labels > 0, PRIMARY_LABEL_LOSS_WEIGHT, 0.0),
     ).astype(np.float32)
 
 

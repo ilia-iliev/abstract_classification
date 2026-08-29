@@ -15,7 +15,7 @@ import torch
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
 from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec
-from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_TARGET, register_formula_token
+from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_LOSS_WEIGHT, register_formula_token
 from scripts.artifacts import write_json
 from scripts.data import LABELS
 from scripts.run_frozen_probes import arrays, load_splits, logits_and_probabilities
@@ -66,7 +66,7 @@ def peak_vram(device):
 
 
 def trial_runner(args, model_name, train, validation, trial_root):
-    _, train_texts, train_targets = arrays(train, "targets")
+    _, train_texts, train_weighted_labels = arrays(train, "weighted_labels")
     validation_ids, validation_texts, validation_labels = arrays(validation, "labels")
     device = torch.device(args.device)
 
@@ -89,7 +89,7 @@ def trial_runner(args, model_name, train, validation, trial_root):
             model.backbone.resize_token_embeddings(len(tokenizer))
             model.to(device)
             generator = torch.Generator().manual_seed(args.seed)
-            training = encoded_dataset(tokenizer, train_texts, train_targets, args.batch_size, shuffle=True, generator=generator)
+            training = encoded_dataset(tokenizer, train_texts, train_weighted_labels, args.batch_size, shuffle=True, generator=generator)
             validation_data = encoded_dataset(tokenizer, validation_texts, validation_labels, args.batch_size)
             steps = optimizer_steps(training, args.gradient_accumulation)
             optimizer = torch.optim.AdamW(model.parameters(), lr=params["learning_rate"], weight_decay=params["weight_decay"])
@@ -209,7 +209,7 @@ def main():
         "tuning_training_records": TUNING_RECORDS, "tuning_minimum_positives_per_label": TUNING_MINIMUM_POSITIVES,
         "validation_records": len(dataset["validation"]), "devices": args.devices, "parallel_trials": len(args.devices),
         "effective_batch_size": args.batch_size * args.gradient_accumulation, "batch_size": args.batch_size, "gradient_accumulation": args.gradient_accumulation,
-        "loss": "weighted_multilabel_loss with unit positive weights", "secondary_label_target": SECONDARY_LABEL_TARGET,
+        "loss": "binary cross-entropy with half-weighted secondary positives", "secondary_label_loss_weight": SECONDARY_LABEL_LOSS_WEIGHT,
         "max_length": MAX_CONTEXT_LENGTH, "formula_token": FORMULA_TOKEN, "preprocessing": PREPROCESSING_VERSION,
         "threshold_candidates": args.thresholds, "selection_metric": "validation_macro_f1_after_per_label_threshold_tuning",
         "sampler": {"name": "TPESampler", "seed": args.sampler_seed, "n_startup_trials": 4, "constant_liar": True}, "seed": args.seed,

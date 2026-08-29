@@ -10,8 +10,8 @@ from torch.utils.data import DataLoader, Dataset
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
 from classifier.modeling import BACKBONES, DEFAULT_BACKBONE, MultilabelClassifier, backbone_spec, weighted_multilabel_loss
-from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_TARGET, register_formula_token
-from scripts.data import LABELS, build_targets, load_category_examples, load_tag_aware_examples, load_uniform_examples
+from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_LOSS_WEIGHT, register_formula_token
+from scripts.data import LABELS, build_weighted_labels, load_category_examples, load_tag_aware_examples, load_uniform_examples
 
 MODEL_NAME = DEFAULT_BACKBONE
 
@@ -91,13 +91,16 @@ def prepare_data(args):
     candidate_texts, candidate_labels = arrays(split["training"]); validation_texts, y_validation = arrays(split["validation"]); test_texts, y_test = arrays(split["test"])
     indices = balanced_training_indices(candidate_labels, args.train_limit, args.minimum_label_examples)
     train_texts, y_train = candidate_texts[indices], candidate_labels[indices]
-    targets, primary_counts, secondary_counts = y_train, y_train.sum(axis=0).astype(int), np.zeros(len(LABELS), dtype=int)
+    weighted_labels = y_train
+    primary_counts = y_train.sum(axis=0).astype(int)
+    secondary_counts = np.zeros(len(LABELS), dtype=int)
     if args.sampling == "tag_aware":
         primary = np.asarray(split["training_primary_values"], dtype=np.float32)[indices]
-        targets = build_targets(y_train, primary); secondary = (y_train == 1) & (primary == 0)
+        weighted_labels = build_weighted_labels(y_train, primary)
+        secondary = (y_train == 1) & (primary == 0)
         primary_counts, secondary_counts = ((y_train == 1) & ~secondary).sum(axis=0), secondary.sum(axis=0)
-    details = {"sampling": args.sampling, "preprocessing": PREPROCESSING_VERSION, "sample_size": len(candidate_texts), "candidate_training_size": len(candidate_texts), "eligible_records": split["eligible"], "training_candidates": split["training_candidates"], "sample_label_counts": split["training_label_counts"], "minimum_label_examples": args.minimum_label_examples, "secondary_label_target": SECONDARY_LABEL_TARGET, "training_primary_label_counts": dict(zip(LABELS, primary_counts.astype(int).tolist())), "training_secondary_label_counts": dict(zip(LABELS, secondary_counts.astype(int).tolist())), "deduplication": "normalized_abstract", "validation_records": len(validation_texts), "test_records": len(test_texts)}
-    return train_texts, y_train, targets, validation_texts, y_validation, test_texts, y_test, details
+    details = {"sampling": args.sampling, "preprocessing": PREPROCESSING_VERSION, "sample_size": len(candidate_texts), "candidate_training_size": len(candidate_texts), "eligible_records": split["eligible"], "training_candidates": split["training_candidates"], "sample_label_counts": split["training_label_counts"], "minimum_label_examples": args.minimum_label_examples, "secondary_label_loss_weight": SECONDARY_LABEL_LOSS_WEIGHT, "training_primary_label_counts": dict(zip(LABELS, primary_counts.astype(int).tolist())), "training_secondary_label_counts": dict(zip(LABELS, secondary_counts.astype(int).tolist())), "deduplication": "normalized_abstract", "validation_records": len(validation_texts), "test_records": len(test_texts)}
+    return train_texts, y_train, weighted_labels, validation_texts, y_validation, test_texts, y_test, details
 
 
 def device_for(args): return torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
@@ -113,22 +116,22 @@ def probabilities(model, data, device):
 
 def train_epoch(model, data, optimizer, scheduler, weights, device):
     model.train()
-    for tokens, targets in data:
+    for tokens, weighted_labels in data:
         optimizer.zero_grad(set_to_none=True)
         logits = model(**{key: value.to(device) for key, value in tokens.items()})
-        loss = weighted_multilabel_loss(logits, targets.to(device), weights)
+        loss = weighted_multilabel_loss(logits, weighted_labels.to(device), weights)
         loss.backward(); torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
         optimizer.step(); scheduler.step()
 
 
 def train(args):
     torch.manual_seed(42); np.random.seed(42)
-    train_texts, y_train, targets, validation_texts, y_validation, test_texts, y_test, details = prepare_data(args)
+    train_texts, y_train, weighted_labels, validation_texts, y_validation, test_texts, y_test, details = prepare_data(args)
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
     model = MultilabelClassifier.from_pretrained(args.model_name, len(LABELS), backbone_spec(args.model_name).pooling)
     add_formula_token(tokenizer, model)
     device = device_for(args); model.to(device)
-    training = encoded_dataset(tokenizer, train_texts, targets, args.batch_size, shuffle=True); validation = encoded_dataset(tokenizer, validation_texts, y_validation, args.batch_size)
+    training = encoded_dataset(tokenizer, train_texts, weighted_labels, args.batch_size, shuffle=True); validation = encoded_dataset(tokenizer, validation_texts, y_validation, args.batch_size)
     optimizer = torch.optim.AdamW(model.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     scheduler = get_linear_schedule_with_warmup(optimizer, max(1, round(len(training) * args.epochs * args.warmup_ratio)), len(training) * args.epochs)
     for _ in range(args.epochs): train_epoch(model, training, optimizer, scheduler, class_weights(y_train, args.class_weighting), device)

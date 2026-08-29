@@ -64,10 +64,12 @@ def logits_and_probabilities(model, data, device):
 
 def train_head(model, training, optimizer, scheduler, device):
     model.train()
-    for tokens, targets in training:
+    for tokens, weighted_labels in training:
         optimizer.zero_grad(set_to_none=True)
         logits = model(**{key: value.to(device) for key, value in tokens.items()})
-        loss = weighted_multilabel_loss(logits, targets.to(device), np.ones(len(LABELS), dtype=np.float32))
+        loss = weighted_multilabel_loss(
+            logits, weighted_labels.to(device), np.ones(len(LABELS), dtype=np.float32)
+        )
         loss.backward()
         torch.nn.utils.clip_grad_norm_(model.classifier.parameters(), 1.0)
         optimizer.step()
@@ -81,7 +83,9 @@ def peak_vram(device):
 
 
 def run_model(args, dataset, model_name, output):
-    train_ids, train_texts, train_targets = arrays(dataset["training"], "targets")
+    train_ids, train_texts, train_weighted_labels = arrays(
+        dataset["training"], "weighted_labels"
+    )
     validation_ids, validation_texts, validation_labels = arrays(dataset["validation"], "labels")
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
@@ -93,7 +97,14 @@ def run_model(args, dataset, model_name, output):
     device = torch.device(args.device or ("cuda" if torch.cuda.is_available() else "cpu"))
     model.to(device)
     generator = torch.Generator().manual_seed(args.seed)
-    training = encoded_dataset(tokenizer, train_texts, train_targets, args.batch_size, shuffle=True, generator=generator)
+    training = encoded_dataset(
+        tokenizer,
+        train_texts,
+        train_weighted_labels,
+        args.batch_size,
+        shuffle=True,
+        generator=generator,
+    )
     validation = encoded_dataset(tokenizer, validation_texts, validation_labels, args.batch_size)
     optimizer = torch.optim.AdamW(model.classifier.parameters(), lr=args.learning_rate, weight_decay=args.weight_decay)
     total_steps = len(training) * args.epochs

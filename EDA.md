@@ -1,6 +1,6 @@
 # Exploratory data analysis
 
-Generated from `data/arxiv-metadata-oai-snapshot.json` with `uv run python -m scripts.eda data/arxiv-metadata-oai-snapshot.json`.
+These figures were generated from the Cornell arXiv snapshot used for the experiment. They are retained as a summary of that analysis; the source snapshot and raw analysis output are not part of this repository.
 
 ## Dataset
 
