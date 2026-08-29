@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import torch
 from torch import nn
-from transformers import AutoModel
+from transformers import AutoConfig, AutoModel
 
 
 @dataclass(frozen=True)
@@ -83,7 +83,12 @@ class MultilabelClassifier(nn.Module):
     @classmethod
     def load(cls, path, num_labels, map_location="cpu"):
         payload = torch.load(path / "classifier.pt", map_location=map_location, weights_only=True)
-        model = cls(AutoModel.from_pretrained(path), payload["pooling"], num_labels)
+        config = AutoConfig.from_pretrained(path)
+        # ModernBERT enables torch.compile when Triton is detected. Inference must
+        # remain usable when that optional compiler cannot run on the host GPU.
+        if hasattr(config, "reference_compile"):
+            config.reference_compile = False
+        model = cls(AutoModel.from_pretrained(path, config=config), payload["pooling"], num_labels)
         model.classifier.load_state_dict(payload["classifier"])
         return model
 
