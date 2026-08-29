@@ -1,17 +1,23 @@
 # arXiv abstract classifier
 
-A multi-label transformer classifier for five broad arXiv areas: biology, chemistry, computer science, physics, and social sciences. The repository includes training and evaluation tools plus a Django REST API.
+Text classifier for abstracts. The repository includes training and evaluation and Django REST API.
 
 ## Quick start
 
 Requires Python 3.11 and [uv](https://docs.astral.sh/uv/getting-started/installation/). From a fresh clone:
 
 ```bash
-./scripts/setup.sh
+uv run python -m scripts.download_model
 uv run manage.py runserver
 ```
 
-Setup creates the Python environment and downloads the best-performing model from Hugging Face into `artifacts/model`.
+`uv run` creates the Python environment and the setup command downloads a model from Hugging Face into `artifacts/model`.
+
+```bash
+uv run python -m scripts.download_model --model bert-base
+```
+
+The available choices are `bert-base`, `modernbert`, `embedding-gemma`, and `qwen` (the default).
 
 Check that the model loaded:
 
@@ -41,16 +47,7 @@ Four fully fine-tuned models were evaluated once on the untouched 20,000-record 
 | ModernBERT-base | 0.7895 | 0.9467 | 0.9091 | 0.9648 | 0.60 GB |
 | bert-base-uncased | 0.7878 | 0.9457 | 0.9078 | 0.9624 | **0.44 GB** |
 
-The four fine-tuned models are available on Hugging Face:
-
-- [Qwen3-Embedding-0.6B](https://huggingface.co/Ilia-Iliev/arxiv-abstract-classifier-qwen3-embedding-0.6b)
-- [EmbeddingGemma 300M](https://huggingface.co/Ilia-Iliev/arxiv-abstract-classifier-embeddinggemma-300m)
-- [ModernBERT base](https://huggingface.co/Ilia-Iliev/arxiv-abstract-classifier-modernbert-base)
-- [BERT base uncased](https://huggingface.co/Ilia-Iliev/arxiv-abstract-classifier-bert-base-uncased)
-
 ## Data and training
-
-Download the [Cornell arXiv dataset](https://www.kaggle.com/datasets/Cornell-University/arxiv) into `data/`:
 
 ```bash
 kaggle datasets download Cornell-University/arxiv -p data --unzip
@@ -63,10 +60,5 @@ uv sync --extra training
 uv run python -m scripts.train data/arxiv-metadata-oai-snapshot.json
 ```
 
-Pass `--model-name` to choose another backbone and run `uv run python -m scripts.train --help` for all options. Training uses normalized, deduplicated abstracts, deterministic splits, and per-label thresholds selected on validation data.
+Pass `--model-name` to choose backbone and run `uv run python -m scripts.train --help` for all options.
 
-## Tests
-
-```bash
-uv run --extra dev pytest
-```
