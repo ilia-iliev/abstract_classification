@@ -1,0 +1,27 @@
+[project]
+name = "arxiv-classifier"
+version = "0.1.0"
+description = "Multi-label arXiv abstract classifier and Django REST API"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "django>=5.1,<6",
+  "djangorestframework>=3.15,<4",
+  "numpy>=1.26,<2.1",
+  "pylatexenc>=2.11",
+  "scikit-learn>=1.5,<2",
+]
+
+[project.optional-dependencies]
+training = [
+  "optuna>=4.0,<5",
+  "torch>=2.5,<3",
+  "transformers>=4.51,<5",
+]
+dev = ["pytest>=8,<9", "pytest-django>=4.9,<5"]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings"
+python_files = ["test_*.py"]
+
+[tool.uv]
+package = false

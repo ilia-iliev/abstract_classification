@@ -1,0 +1,137 @@
+{
+  "labels": [
+    "biology",
+    "chemistry",
+    "computer_science",
+    "physics",
+    "social_sciences"
+  ],
+  "thresholds": [
+    0.8,
+    0.7,
+    0.3,
+    0.5,
+    0.7
+  ],
+  "records": [
+    {
+      "abstract": "Protein and gene expression in cells.",
+      "labels": [
+        1,
+        0,
+        0,
+        0,
+        0
+      ],
+      "primary_labels": [
+        1,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "abstract": "Chemical reaction with quantum particles.",
+      "labels": [
+        0,
+        1,
+        0,
+        1,
+        0
+      ],
+      "primary_labels": [
+        0,
+        1,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "abstract": "We train an algorithm for network classification.",
+      "labels": [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "primary_labels": [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    },
+    {
+      "abstract": "A $abcdefghijklmnopqrstuvwxyz$ formula appears in a physics result.",
+      "labels": [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "primary_labels": [
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "abstract": "Broken $x with \\textit{style} and \\alpha.",
+      "labels": [
+        0,
+        0,
+        0,
+        1,
+        0
+      ],
+      "primary_labels": [
+        0,
+        0,
+        0,
+        1,
+        0
+      ]
+    },
+    {
+      "abstract": "Economic policy and social behavior in markets.",
+      "labels": [
+        0,
+        0,
+        0,
+        0,
+        1
+      ],
+      "primary_labels": [
+        0,
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    {
+      "abstract": "truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated truncated",
+      "labels": [
+        0,
+        0,
+        1,
+        0,
+        0
+      ],
+      "primary_labels": [
+        0,
+        0,
+        1,
+        0,
+        0
+      ]
+    }
+  ]
+}

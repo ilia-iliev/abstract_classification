@@ -1,0 +1,11 @@
+.venv/
+.cache/
+.hf-cache/
+logs/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+*.sqlite3
+data/
+artifacts/
+.env
