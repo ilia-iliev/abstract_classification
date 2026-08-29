@@ -6,13 +6,13 @@ from pathlib import Path
 
 import numpy as np
 
+from classifier.labels import LABELS
 from classifier.preprocessing import (
     PRIMARY_LABEL_TARGET,
     SECONDARY_LABEL_TARGET,
     prepare_abstract,
 )
 
-LABELS = ["biology", "chemistry", "computer_science", "physics", "social_sciences"]
 PHYSICS_PREFIXES = ("astro-ph", "cond-mat", "gr-qc", "hep-", "math-ph", "nlin", "nucl-", "physics", "quant-ph")
 
 

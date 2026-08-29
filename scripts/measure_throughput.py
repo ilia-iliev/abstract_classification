@@ -3,7 +3,6 @@
 import argparse
 import importlib.metadata
 import json
-import os
 import platform
 import statistics
 import subprocess
@@ -18,8 +17,9 @@ from transformers import AutoTokenizer
 
 from classifier.modeling import BACKBONES, MultilabelClassifier
 from classifier.preprocessing import MAX_CONTEXT_LENGTH, prepare_abstract
+from scripts.artifacts import write_json
 from scripts.data import LABELS, load_manifest_examples
-from scripts.evaluate_benchmark import sha256
+from scripts.hashing import sha256
 
 WARMUP_ITERATIONS = 20
 MEASURED_ITERATIONS = 100
@@ -31,9 +31,6 @@ BUCKETS = {
     "truncated_512": lambda length: length >= MAX_CONTEXT_LENGTH,
 }
 
-
-def write_json(path, value):
-    Path(path).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def percentile_summary(values):

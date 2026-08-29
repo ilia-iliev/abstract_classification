@@ -1,4 +1,4 @@
-"""Train each Optuna-selected benchmark configuration exactly once."""
+"""Train each Optuna-selected configuration exactly once."""
 
 import argparse
 import gc
@@ -6,7 +6,6 @@ import hashlib
 import importlib.metadata
 import json
 import math
-import os
 import platform
 import subprocess
 import tempfile
@@ -17,10 +16,12 @@ import numpy as np
 import torch
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
-from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec, weighted_multilabel_loss
+from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_TARGET, register_formula_token
+from scripts.artifacts import write_json
 from scripts.data import LABELS
 from scripts.run_frozen_probes import arrays, load_splits, logits_and_probabilities
+from scripts.training import train_one_epoch
 from scripts.train import encoded_dataset, metrics, tune_thresholds
 
 STAGE = "selected_configuration_training"
@@ -30,9 +31,6 @@ PRECISION_POLICY = "float32"
 GRADIENT_CLIP_NORM = 1.0
 TUNING_TRIAL_BUDGET = 16
 
-
-def write_json(path, value):
-    Path(path).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def sha256_json(value):
@@ -58,28 +56,6 @@ def git_commit():
 def peak_vram(device):
     return int(torch.cuda.max_memory_allocated(device)) if device.type == "cuda" else None
 
-
-def train_one_epoch(model, data, optimizer, scheduler, device, gradient_accumulation):
-    """Train with the same mean-loss accumulation semantics used in tuning."""
-    model.train()
-    optimizer.zero_grad(set_to_none=True)
-    total_loss = 0.0
-    batches = len(data)
-    for batch_index, (tokens, targets) in enumerate(data, 1):
-        logits = model(**{key: value.to(device) for key, value in tokens.items()})
-        loss = weighted_multilabel_loss(
-            logits, targets.to(device), np.ones(len(LABELS), dtype=np.float32)
-        )
-        total_loss += loss.item()
-        remainder = batches % gradient_accumulation
-        group_size = remainder if remainder and batch_index > batches - remainder else gradient_accumulation
-        (loss / group_size).backward()
-        if batch_index % gradient_accumulation == 0 or batch_index == batches:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), GRADIENT_CLIP_NORM)
-            optimizer.step()
-            scheduler.step()
-            optimizer.zero_grad(set_to_none=True)
-    return {"epoch": 1, "mean_training_loss": total_loss / batches, "optimizer_steps": math.ceil(batches / gradient_accumulation)}
 
 
 def selected_parameters(tuning, model_name):
@@ -151,7 +127,7 @@ def train_model(args, model_name, dataset, dataset_metadata, tuning_configuratio
         torch.cuda.empty_cache()
         torch.cuda.reset_peak_memory_stats(device)
     started = time.perf_counter()
-    history = [train_one_epoch(model, training, optimizer, scheduler, device, gradient_accumulation)]
+    history = [train_one_epoch(model, training, optimizer, scheduler, device, gradient_accumulation, len(LABELS))]
     duration = time.perf_counter() - started
     training_peak_vram = peak_vram(device)
     logits, probabilities = logits_and_probabilities(model, validation, device)
@@ -214,7 +190,7 @@ def train_model(args, model_name, dataset, dataset_metadata, tuning_configuratio
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Train the four selected one-epoch benchmark configurations.")
+    parser = argparse.ArgumentParser(description="Train the four selected one-epoch configurations.")
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("manifests", type=Path)
     parser.add_argument("tuning", type=Path, help="Completed artifacts/hyperparameter-tuning directory")

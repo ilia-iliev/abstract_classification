@@ -1,4 +1,4 @@
-"""Run a parallel, fixed-subset Optuna search for benchmark backbones."""
+"""Run a parallel, fixed-subset Optuna search for candidate backbones."""
 
 import argparse
 import gc
@@ -14,10 +14,12 @@ import optuna
 import torch
 from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 
-from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec, weighted_multilabel_loss
+from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_TARGET, register_formula_token
+from scripts.artifacts import write_json
 from scripts.data import LABELS
 from scripts.run_frozen_probes import arrays, load_splits, logits_and_probabilities
+from scripts.training import train_one_epoch
 from scripts.train import encoded_dataset, metrics, tune_thresholds
 
 TRIALS_PER_MODEL = 16
@@ -29,9 +31,6 @@ SEARCH_SPACE = {
     "warmup_ratio": {"low": 0.0, "high": 0.1},
 }
 
-
-def write_json(path, value):
-    Path(path).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def deterministic_rank(seed, record_id, purpose):
@@ -60,22 +59,6 @@ def select_tuning_records(training, seed):
 def optimizer_steps(data, gradient_accumulation):
     return math.ceil(len(data) / gradient_accumulation)
 
-
-def train_one_epoch(model, data, optimizer, scheduler, device, gradient_accumulation):
-    model.train()
-    optimizer.zero_grad(set_to_none=True)
-    batches = len(data)
-    for batch_index, (tokens, targets) in enumerate(data, 1):
-        logits = model(**{key: value.to(device) for key, value in tokens.items()})
-        loss = weighted_multilabel_loss(logits, targets.to(device), np.ones(len(LABELS), dtype=np.float32))
-        remainder = batches % gradient_accumulation
-        group_size = remainder if remainder and batch_index > batches - remainder else gradient_accumulation
-        (loss / group_size).backward()
-        if batch_index % gradient_accumulation == 0 or batch_index == batches:
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-            optimizer.step()
-            scheduler.step()
-            optimizer.zero_grad(set_to_none=True)
 
 
 def peak_vram(device):
@@ -113,7 +96,7 @@ def trial_runner(args, model_name, train, validation, trial_root):
             scheduler = get_linear_schedule_with_warmup(optimizer, round(steps * params["warmup_ratio"]), steps)
             torch.cuda.empty_cache()
             torch.cuda.reset_peak_memory_stats(device)
-            train_one_epoch(model, training, optimizer, scheduler, device, args.gradient_accumulation)
+            train_one_epoch(model, training, optimizer, scheduler, device, args.gradient_accumulation, len(LABELS))
             logits, scores = logits_and_probabilities(model, validation_data, device)
             thresholds = tune_thresholds(validation_labels, scores, args.thresholds)
             result = metrics(validation_labels, scores, np.asarray(thresholds))
@@ -200,7 +183,7 @@ def tune_model(args, model_name, dataset, output):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Tune benchmark backbones on a fixed 5,000-record subset.")
+    parser = argparse.ArgumentParser(description="Tune candidate backbones on a fixed 5,000-record subset.")
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("manifests", type=Path)
     parser.add_argument("--output", type=Path, default=Path("artifacts/hyperparameter-tuning"))

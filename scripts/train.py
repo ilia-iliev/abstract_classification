@@ -58,9 +58,6 @@ def class_weights(labels, method):
     return np.clip(inverse, 1.0, 50.0).astype(np.float32)
 
 
-def weighted_binary_crossentropy(positive_weights):
-    return lambda targets, logits: weighted_multilabel_loss(logits, targets, positive_weights)
-
 
 def add_formula_token(tokenizer, model):
     register_formula_token(tokenizer)

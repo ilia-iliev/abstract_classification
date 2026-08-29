@@ -1,7 +1,6 @@
-"""Train frozen-backbone probes on the immutable benchmark manifests."""
+"""Train frozen-backbone probes on immutable manifests."""
 
 import argparse
-import hashlib
 import json
 import time
 from pathlib import Path
@@ -13,15 +12,9 @@ from transformers import AutoTokenizer, get_linear_schedule_with_warmup
 from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec, weighted_multilabel_loss
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, register_formula_token
 from scripts.data import LABELS, load_manifest_examples
+from scripts.hashing import sha256
 from scripts.train import encoded_dataset, metrics, tune_thresholds
 
-
-def sha256(path):
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def load_splits(snapshot, manifests):
@@ -156,7 +149,7 @@ def write_report(output, dataset_metadata, results):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run head-only probes for every benchmark backbone.")
+    parser = argparse.ArgumentParser(description="Run head-only probes for every candidate backbone.")
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("manifests", type=Path)
     parser.add_argument("--output", type=Path, default=Path("artifacts/frozen-probes"))

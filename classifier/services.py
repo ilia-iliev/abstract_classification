@@ -7,11 +7,11 @@ from pathlib import Path
 
 import numpy as np
 
+from classifier.labels import LABELS
 from classifier.preprocessing import MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, prepare_abstract
 
 logger = logging.getLogger(__name__)
 
-LABELS = ["biology", "chemistry", "computer_science", "physics", "social_sciences"]
 _FALLBACK_WORD_PATTERN = re.compile(r"[a-z]+")
 _KEYWORDS = {
     "biology": {"cell", "gene", "protein", "organism", "genome", "neural", "biological", "species", "disease"},
@@ -24,7 +24,8 @@ _KEYWORDS = {
 
 class AbstractClassifier:
     def __init__(self):
-        self.artifact_dir = Path(os.getenv("MODEL_DIR", "artifacts/model"))
+        default_artifact_dir = Path(__file__).resolve().parents[1] / "artifacts" / "model"
+        self.artifact_dir = Path(os.getenv("MODEL_DIR", default_artifact_dir)).expanduser().resolve()
         self._model = None
         self._tokenizer = None
         self._labels = LABELS
