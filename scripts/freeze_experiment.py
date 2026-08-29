@@ -1,8 +1,4 @@
-"""Archive and attest the inputs to benchmark evaluation.
-
-The resulting directory is the only model/data/code input that benchmark and
-holdout evaluation may use.  It is created once and is never overwritten.
-"""
+"""Archive and attest the inputs to final-holdout evaluation."""
 
 import argparse
 import hashlib
@@ -13,11 +9,12 @@ from pathlib import Path
 
 from classifier.modeling import BACKBONES
 from classifier.preprocessing import PREPROCESSING_VERSION
+from scripts.artifacts import write_json
 from scripts.data import LABELS
-from scripts.run_frozen_probes import sha256
+from scripts.hashing import sha256
 
 FREEZE_VERSION = 1
-REQUIRED_MANIFESTS = ("training", "validation", "benchmark", "holdout")
+REQUIRED_MANIFESTS = ("training", "validation", "holdout")
 REQUIRED_ARTIFACT_FILES = (
     "classifier.pt",
     "configuration.json",
@@ -32,14 +29,10 @@ CODE_FILES = {
     "preprocessing": Path("classifier/preprocessing.py"),
     "data_loading": Path("scripts/data.py"),
     "metrics": Path("scripts/train.py"),
-    "benchmark_metrics": Path("scripts/evaluate_benchmark.py"),
     "holdout_metrics": Path("scripts/evaluate_holdout.py"),
     "throughput_measurement": Path("scripts/measure_throughput.py"),
 }
 
-
-def write_json(path, value):
-    Path(path).write_text(json.dumps(value, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def file_inventory(root):
@@ -178,7 +171,7 @@ def freeze(snapshot, manifests, selected, output, throughput_protocol):
 
         manifest = {
             "freeze_version": FREEZE_VERSION,
-            "status": "frozen_before_benchmark_evaluation",
+            "status": "frozen_before_holdout_evaluation",
             "dataset": {
                 "dataset_id": dataset["dataset_id"],
                 "snapshot_sha256": dataset["snapshot_sha256"],
@@ -195,7 +188,6 @@ def freeze(snapshot, manifests, selected, output, throughput_protocol):
             "classification_head_and_pooling": code_records["classification_head_and_pooling"],
             "data_loading_code": code_records["data_loading"],
             "metric_code": code_records["metrics"],
-            "benchmark_metric_code": code_records["benchmark_metrics"],
             "holdout_metric_code": code_records["holdout_metrics"],
             "throughput_measurement_code": code_records["throughput_measurement"],
             "throughput_protocol": {
@@ -203,7 +195,7 @@ def freeze(snapshot, manifests, selected, output, throughput_protocol):
                 "sha256": sha256(staging / "throughput_protocol.md"),
             },
             "selected_training_summary_sha256": sha256(selected / "summary.json"),
-            "evaluation_rule": "Benchmark and holdout evaluation must use only these archived artifacts; retraining, threshold changes, and configuration changes are prohibited.",
+            "evaluation_rule": "Final-holdout evaluation must use only these archived artifacts; retraining, threshold changes, and configuration changes are prohibited.",
         }
         write_json(staging / "freeze.json", manifest)
         staging.replace(output)
@@ -214,7 +206,7 @@ def freeze(snapshot, manifests, selected, output, throughput_protocol):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Freeze final artifacts and evaluation inputs before benchmark evaluation.")
+    parser = argparse.ArgumentParser(description="Freeze final artifacts and evaluation inputs before final-holdout evaluation.")
     parser.add_argument("snapshot", type=Path)
     parser.add_argument("manifests", type=Path)
     parser.add_argument("selected", type=Path, help="artifacts/selected-configurations")

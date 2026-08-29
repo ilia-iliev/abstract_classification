@@ -1,4 +1,4 @@
-"""Build immutable benchmark manifests without normalizing the entire snapshot."""
+"""Build immutable training, validation, and final-holdout manifests."""
 
 import argparse
 import hashlib
@@ -12,8 +12,9 @@ from urllib.request import urlopen
 
 from classifier.preprocessing import prepare_abstract
 from scripts.data import LABELS, broad_labels, records
+from scripts.hashing import sha256
 
-SPLIT_SIZES = {"training": 100_000, "validation": 20_000, "benchmark": 20_000, "holdout": 20_000}
+SPLIT_SIZES = {"training": 100_000, "validation": 20_000, "holdout": 20_000}
 MINIMUM_TRAINING_POSITIVES = 8_000
 OVERFETCH_RATIO = 0.05
 MANIFEST_VERSION = 2
@@ -26,13 +27,6 @@ def content_hash(text):
 def deterministic_rank(seed, value, purpose):
     return hashlib.sha256(f"{seed}\0{purpose}\0{value}".encode("utf-8")).hexdigest()
 
-
-def file_hash(path):
-    digest = hashlib.sha256()
-    with Path(path).open("rb") as source:
-        for chunk in iter(lambda: source.read(1024 * 1024), b""):
-            digest.update(chunk)
-    return digest.hexdigest()
 
 
 def download_snapshot(url, destination):
@@ -76,7 +70,7 @@ def scan_candidates(snapshot, seed):
             continue
         eligible += 1
         row = {"id": str(record["id"]), "abstract": abstract, "labels": [int(label in labels) for label in LABELS]}
-        retain(evaluation, candidate_count(sum(SPLIT_SIZES[name] for name in ("validation", "benchmark", "holdout"))), deterministic_rank(seed, row["id"], "evaluation"), row)
+        retain(evaluation, candidate_count(sum(SPLIT_SIZES[name] for name in ("validation", "holdout"))), deterministic_rank(seed, row["id"], "evaluation"), row)
         retain(training, candidate_count(SPLIT_SIZES["training"]), deterministic_rank(seed, row["id"], "training"), row)
         for label in labels:
             retain(by_label[label], candidate_count(MINIMUM_TRAINING_POSITIVES), deterministic_rank(seed, row["id"], f"training-{label}"), row)
@@ -121,12 +115,12 @@ def select_splits(seed, evaluation_rows, training_rows, label_rows):
         if value is not None and value["content_hash"] not in used_hashes:
             evaluation.append(value)
             used_hashes.add(value["content_hash"])
-    evaluation_total = sum(SPLIT_SIZES[name] for name in ("validation", "benchmark", "holdout"))
+    evaluation_total = sum(SPLIT_SIZES[name] for name in ("validation", "holdout"))
     if len(evaluation) < evaluation_total:
         raise ValueError("5% evaluation overfetch was insufficient after candidate deduplication")
     splits = {}
     offset = 0
-    for name in ("validation", "benchmark", "holdout"):
+    for name in ("validation", "holdout"):
         splits[name] = evaluation[offset:offset + SPLIT_SIZES[name]]
         offset += SPLIT_SIZES[name]
 
@@ -176,7 +170,7 @@ def write_manifest(path, rows):
 
 def build_dataset(snapshot, output, snapshot_date, seed=42, snapshot_url=None):
     snapshot, output = Path(snapshot), Path(output)
-    snapshot_digest = file_hash(snapshot)
+    snapshot_digest = sha256(snapshot)
     configuration = {"snapshot_sha256": snapshot_digest, "snapshot_date": snapshot_date, "split_seed": seed}
     metadata_path = output / "dataset.json"
     if output.exists():
@@ -193,7 +187,7 @@ def build_dataset(snapshot, output, snapshot_date, seed=42, snapshot_url=None):
         manifest_hashes = {name: write_manifest(staging / f"{name}.jsonl", rows) for name, rows in splits.items()}
         metadata = {
             "manifest_version": MANIFEST_VERSION,
-            "dataset_id": f"arxiv-benchmark-{snapshot_digest[:16]}",
+            "dataset_id": f"arxiv-holdout-{snapshot_digest[:16]}",
             "snapshot": {"path": str(snapshot), "url": snapshot_url, "sha256": snapshot_digest, "date": snapshot_date},
             **configuration,
             "labels": LABELS,
