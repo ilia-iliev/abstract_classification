@@ -25,6 +25,10 @@ class ClassificationApiTests(APITestCase):
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data["predictions"]) == 2
 
+    def test_rejects_empty_batch(self):
+        response = self.client.post(reverse("classify"), {"abstracts": []}, format="json")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
     def test_rejects_ambiguous_payload(self):
         response = self.client.post(
             reverse("classify"), {"abstract": "text", "abstracts": ["text"]}, format="json"

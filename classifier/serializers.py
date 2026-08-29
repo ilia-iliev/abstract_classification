@@ -6,6 +6,7 @@ class ClassificationRequestSerializer(serializers.Serializer):
     abstracts = serializers.ListField(
         child=serializers.CharField(allow_blank=False, max_length=20000),
         required=False,
+        min_length=1,
         max_length=32,
     )
 

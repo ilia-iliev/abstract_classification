@@ -3,6 +3,7 @@
 import argparse
 import json
 import os
+import tempfile
 from pathlib import Path
 
 from huggingface_hub import snapshot_download
@@ -87,7 +88,10 @@ def model_dir():
 def is_complete(destination, base_model):
     if not all((destination / name).is_file() for name in REQUIRED_FILES):
         return False
-    metadata = json.loads((destination / "metadata.json").read_text(encoding="utf-8"))
+    try:
+        metadata = json.loads((destination / "metadata.json").read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return False
     return metadata.get("base_model") == base_model
 
 
@@ -105,18 +109,29 @@ def main():
         print(f"{args.model} is already installed at {destination}")
         return
 
-    destination.mkdir(parents=True, exist_ok=True)
+    destination.parent.mkdir(parents=True, exist_ok=True)
     cache = configure_huggingface_home()
     print(f"Downloading {model['repo']} to {destination} (about {model['size']})...")
-    snapshot_download(
-        repo_id=model["repo"],
-        revision=model["revision"],
-        local_dir=destination,
-        cache_dir=cache,
-        allow_patterns=DOWNLOAD_PATTERNS,
-    )
-    if not is_complete(destination, model["base_model"]):
-        raise RuntimeError(f"Downloaded model is incomplete: {destination}")
+    with tempfile.TemporaryDirectory(prefix=".model-download-", dir=destination.parent) as temporary:
+        downloaded = Path(temporary) / "model"
+        snapshot_download(
+            repo_id=model["repo"],
+            revision=model["revision"],
+            local_dir=downloaded,
+            cache_dir=cache,
+            allow_patterns=DOWNLOAD_PATTERNS,
+        )
+        if not is_complete(downloaded, model["base_model"]):
+            raise RuntimeError(f"Downloaded model is incomplete: {downloaded}")
+        previous = Path(temporary) / "previous"
+        if destination.exists():
+            destination.replace(previous)
+        try:
+            downloaded.replace(destination)
+        except OSError:
+            if previous.exists():
+                previous.replace(destination)
+            raise
     print(f"{args.model} installed at {destination}")
 
 
