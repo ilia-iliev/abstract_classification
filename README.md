@@ -1,6 +1,6 @@
 # arXiv abstract classifier
 
-Text classifier for abstracts. The repository includes training and evaluation code and a Django REST API. The [experiment write-up](https://ilia.foo/blog/old_school_text_classification) explains the analysis and model comparison.
+Text classifier for abstracts. The repository includes training, evaluation and a REST API. More details in the [experiment write-up](https://ilia.foo/blog/old_school_text_classification).
 
 ## Quick start
 
@@ -11,9 +11,9 @@ uv run python -m scripts.download_model
 uv run manage.py runserver
 ```
 
-Open <http://127.0.0.1:8000/> for the browser interface. Paste an abstract and the page shows its predicted categories and confidence scores.
+Open <http://127.0.0.1:8000/> for the browser interface. Paste an abstract and the page shows predictions
 
-`uv run` creates the Python environment and the setup command downloads a model from Hugging Face into `artifacts/model`.
+`uv run` creates the environment and the setup downloads a model into `artifacts/model`.
 
 ```bash
 uv run python -m scripts.download_model --model bert-base
@@ -28,9 +28,7 @@ curl http://127.0.0.1:8000/api/health/
 # {"status":"ok","classifier_backend":"pytorch"}
 ```
 
-The API fails closed when the model is missing or incompatible: health and classification return HTTP 503 rather than serving substitute predictions.
-
-Classify an abstract:
+To classify:
 
 ```bash
 curl -X POST http://127.0.0.1:8000/api/classify/ \
@@ -38,11 +36,11 @@ curl -X POST http://127.0.0.1:8000/api/classify/ \
   -d '{"abstract":"We introduce a transformer algorithm for image classification."}'
 ```
 
-Use `{"abstracts": ["...", "..."]}` to classify a batch of up to 32. The first request loads the model and can take longer. CPU is the default; set `MODEL_DEVICE=cuda` for a CUDA GPU.
+Use `{"abstracts": ["...", "..."]}` to classify a batch of up to 32. First request loads the model. CPU is the default; set `MODEL_DEVICE=cuda` for GPU.
 
 ## Models and results
 
-Four fully fine-tuned models were evaluated once on the untouched 20,000-record final holdout:
+Four fine-tuned models were evaluated:
 
 | Model | Macro F1 | Micro F1 | Exact match | Top-1 | Artifact size |
 |---|---:|---:|---:|---:|---:|
@@ -51,7 +49,7 @@ Four fully fine-tuned models were evaluated once on the untouched 20,000-record 
 | ModernBERT-base | 0.7895 | 0.9467 | 0.9091 | 0.9648 | 0.60 GB |
 | bert-base-uncased | 0.7878 | 0.9457 | 0.9078 | 0.9624 | **0.44 GB** |
 
-These are historical measurements retained from the experiment logs. The code evolved after the runs, and raw logs, predictions, and intermediate artifacts are not included. The published model weights are downloaded from Hugging Face by the setup command above.
+These are historical measurements retained from the experiment logs. The code evolved - raw logs and intermediate artifacts not included. 
 
 The checked-in experiment notes cover [EDA](EDA.md), [preprocessing](PREPROCESSING.md), [training](TRAINING.md), [evaluation](EVALUATION.md), and [throughput methodology](THROUGHPUT.md).
 
