@@ -7,9 +7,9 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from transformers import AutoTokenizer, get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup
 
-from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec, weighted_multilabel_loss
+from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec, load_tokenizer, weighted_multilabel_loss
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, register_formula_token
 from scripts.data import LABELS, load_manifest_examples
 from scripts.hashing import sha256
@@ -89,7 +89,7 @@ def run_model(args, dataset, model_name, output):
     validation_ids, validation_texts, validation_labels = arrays(dataset["validation"], "labels")
     torch.manual_seed(args.seed)
     np.random.seed(args.seed)
-    tokenizer = AutoTokenizer.from_pretrained(model_name)
+    tokenizer = load_tokenizer(model_name)
     register_formula_token(tokenizer)
     model = MultilabelClassifier.from_pretrained(model_name, len(LABELS), backbone_spec(model_name).pooling)
     model.backbone.resize_token_embeddings(len(tokenizer))

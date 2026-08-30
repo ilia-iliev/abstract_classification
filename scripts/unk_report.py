@@ -3,7 +3,7 @@ import re
 from collections import Counter, defaultdict
 from pathlib import Path
 
-from transformers import AutoTokenizer
+from classifier.modeling import load_tokenizer
 
 from classifier.preprocessing import prepare_abstract
 from scripts.tokenizer_eda import MODEL_NAME, sample_records
@@ -86,7 +86,7 @@ def main():
 
     records, _ = sample_records(args.dataset, args.sample_size, args.seed)
     texts = [prepare_abstract(record["abstract"]) for record in records]
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
+    tokenizer = load_tokenizer(MODEL_NAME)
     unknowns = Counter()
     examples = defaultdict(list)
     documents_by_value = defaultdict(set)

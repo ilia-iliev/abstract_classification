@@ -14,9 +14,7 @@ from sklearn.metrics import (
     log_loss,
     precision_recall_fscore_support,
 )
-from transformers import AutoTokenizer
-
-from classifier.modeling import BACKBONES, MultilabelClassifier
+from classifier.modeling import BACKBONES, MultilabelClassifier, load_tokenizer
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION
 from scripts.artifacts import write_json
 from scripts.data import LABELS, load_manifest_examples, records
@@ -178,7 +176,7 @@ def predict(model_directory, rows, batch_size, device):
     configuration = json.loads((model_directory / "configuration.json").read_text(encoding="utf-8"))
     if configuration.get("preprocessing") != PREPROCESSING_VERSION:
         raise ValueError(f"Unexpected preprocessing in {model_directory}")
-    tokenizer = AutoTokenizer.from_pretrained(model_directory)
+    tokenizer = load_tokenizer(model_directory)
     model = MultilabelClassifier.load(model_directory, len(LABELS)).to(device).eval()
     texts = np.asarray([row["text"] for row in rows], dtype=object)
     labels = np.asarray([row["labels"] for row in rows], dtype=np.float32)

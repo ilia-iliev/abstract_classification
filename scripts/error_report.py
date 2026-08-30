@@ -4,9 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from transformers import AutoTokenizer
-
-from classifier.modeling import MultilabelClassifier
+from classifier.modeling import MultilabelClassifier, load_tokenizer
 from classifier.preprocessing import MAX_CONTEXT_LENGTH, prepare_abstract
 from scripts.data import LABELS, load_partition_records
 
@@ -56,7 +54,7 @@ def generate(args):
         record["thresholds"] = thresholds
     texts = [prepare_abstract(record["abstract"]) for record in records]
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    tokenizer = load_tokenizer(model_dir)
     model = MultilabelClassifier.load(model_dir, len(LABELS), map_location=device).to(device).eval()
     probabilities = predict(model, tokenizer, texts, args.batch_size, device)
 

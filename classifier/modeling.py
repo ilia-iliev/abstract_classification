@@ -4,7 +4,7 @@ from dataclasses import dataclass
 
 import torch
 from torch import nn
-from transformers import AutoConfig, AutoModel
+from transformers import AutoConfig, AutoModel, AutoTokenizer
 
 
 @dataclass(frozen=True)
@@ -20,6 +20,11 @@ BACKBONES = {
     "Qwen/Qwen3-Embedding-0.6B": BackboneSpec("last_token"),
 }
 DEFAULT_BACKBONE = "google-bert/bert-base-uncased"
+
+
+def load_tokenizer(name_or_path):
+    """Load tokenizers with the corrected Mistral-family pre-tokenizer regex."""
+    return AutoTokenizer.from_pretrained(name_or_path, fix_mistral_regex=True)
 
 
 def backbone_spec(name):

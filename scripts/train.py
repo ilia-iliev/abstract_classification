@@ -7,9 +7,9 @@ import numpy as np
 import torch
 from sklearn.metrics import accuracy_score, f1_score, precision_recall_fscore_support
 from torch.utils.data import DataLoader, Dataset
-from transformers import AutoTokenizer, get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup
 
-from classifier.modeling import BACKBONES, DEFAULT_BACKBONE, MultilabelClassifier, backbone_spec, weighted_multilabel_loss
+from classifier.modeling import BACKBONES, DEFAULT_BACKBONE, MultilabelClassifier, backbone_spec, load_tokenizer, weighted_multilabel_loss
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_LOSS_WEIGHT, register_formula_token
 from scripts.data import LABELS, build_weighted_labels, load_category_examples, load_tag_aware_examples, load_uniform_examples
 
@@ -127,7 +127,7 @@ def train_epoch(model, data, optimizer, scheduler, weights, device):
 def train(args):
     torch.manual_seed(42); np.random.seed(42)
     train_texts, y_train, weighted_labels, validation_texts, y_validation, test_texts, y_test, details = prepare_data(args)
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    tokenizer = load_tokenizer(args.model_name)
     model = MultilabelClassifier.from_pretrained(args.model_name, len(LABELS), backbone_spec(args.model_name).pooling)
     add_formula_token(tokenizer, model)
     device = device_for(args); model.to(device)

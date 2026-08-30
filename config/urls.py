@@ -1,3 +1,8 @@
 from django.urls import include, path
 
-urlpatterns = [path("api/", include("classifier.urls"))]
+from classifier.views import home
+
+urlpatterns = [
+    path("", home, name="home"),
+    path("api/", include("classifier.urls")),
+]

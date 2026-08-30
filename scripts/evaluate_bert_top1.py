@@ -4,9 +4,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from transformers import AutoTokenizer
-
-from classifier.modeling import MultilabelClassifier
+from classifier.modeling import MultilabelClassifier, load_tokenizer
 from classifier.preprocessing import MAX_CONTEXT_LENGTH, prepare_abstract
 from scripts.data import LABELS, load_partition_records
 
@@ -28,7 +26,7 @@ def main():
         raise RuntimeError(f"Expected {TEST_LIMIT} test records, found {len(records)}.")
 
     metadata = json.loads((MODEL_PATH / "metadata.json").read_text())
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH)
+    tokenizer = load_tokenizer(MODEL_PATH)
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = MultilabelClassifier.load(MODEL_PATH, len(LABELS), map_location=device).to(device).eval()
     started_at = datetime.now(UTC).isoformat()

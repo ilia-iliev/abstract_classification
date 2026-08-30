@@ -3,7 +3,7 @@ import json
 import random
 
 import numpy as np
-from transformers import AutoTokenizer
+from classifier.modeling import load_tokenizer
 
 from classifier.preprocessing import (
     FORMULA_TOKEN,
@@ -121,7 +121,7 @@ def main():
     texts = [prepare_abstract(example["abstract"]) for example in examples]
     reports = []
     for model_name in args.models:
-        tokenizer = AutoTokenizer.from_pretrained(model_name)
+        tokenizer = load_tokenizer(model_name)
         formula_token_id = register_formula_token(tokenizer)
         reports.append({
             "model": model_name,

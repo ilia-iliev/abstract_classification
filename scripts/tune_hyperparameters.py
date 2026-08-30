@@ -12,9 +12,9 @@ from pathlib import Path
 import numpy as np
 import optuna
 import torch
-from transformers import AutoTokenizer, get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup
 
-from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec
+from classifier.modeling import BACKBONES, MultilabelClassifier, backbone_spec, load_tokenizer
 from classifier.preprocessing import FORMULA_TOKEN, MAX_CONTEXT_LENGTH, PREPROCESSING_VERSION, SECONDARY_LABEL_LOSS_WEIGHT, register_formula_token
 from scripts.artifacts import write_json
 from scripts.data import LABELS
@@ -83,7 +83,7 @@ def trial_runner(args, model_name, train, validation, trial_root):
         try:
             torch.manual_seed(args.seed)
             np.random.seed(args.seed)
-            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            tokenizer = load_tokenizer(model_name)
             register_formula_token(tokenizer)
             model = MultilabelClassifier.from_pretrained(model_name, len(LABELS), backbone_spec(model_name).pooling)
             model.backbone.resize_token_embeddings(len(tokenizer))

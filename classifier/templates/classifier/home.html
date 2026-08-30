@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>arXiv abstract classifier</title>
+  <style>
+    :root { color-scheme: light dark; font-family: system-ui, sans-serif; line-height: 1.5; }
+    body { margin: 0; background: #f5f5f2; color: #20201d; }
+    main { width: min(760px, calc(100% - 2rem)); margin: 3rem auto; }
+    h1 { margin-bottom: .25rem; font-size: clamp(1.8rem, 5vw, 2.7rem); }
+    .intro { margin-top: 0; color: #5c5c55; }
+    form, .result, .error { margin-top: 1.5rem; padding: 1.25rem; border: 1px solid #d5d5cf; border-radius: .75rem; background: #fff; }
+    label { display: block; margin-bottom: .5rem; font-weight: 650; }
+    textarea { box-sizing: border-box; width: 100%; resize: vertical; padding: .8rem; border: 1px solid #aaa; border-radius: .4rem; font: inherit; }
+    button { margin-top: .75rem; padding: .65rem 1.1rem; border: 0; border-radius: .4rem; background: #315c41; color: white; font: inherit; font-weight: 650; cursor: pointer; }
+    button:hover { background: #244a32; }
+    .field-error, .error { color: #9d2626; }
+    .result h2, .error h2 { margin-top: 0; }
+    .categories { display: flex; flex-wrap: wrap; gap: .5rem; padding: 0; list-style: none; }
+    .categories li { padding: .3rem .65rem; border-radius: 999px; background: #dfeee4; color: #214d31; font-weight: 650; }
+    .score { display: grid; grid-template-columns: 9rem 1fr 3.5rem; align-items: center; gap: .7rem; margin: .55rem 0; }
+    .bar { height: .55rem; overflow: hidden; border-radius: 999px; background: #e6e6e1; }
+    .bar span { display: block; height: 100%; background: #668e73; }
+    .value { text-align: right; font-variant-numeric: tabular-nums; }
+    footer { margin: 1.5rem 0; color: #686862; font-size: .9rem; }
+    footer a { color: inherit; }
+    @media (prefers-color-scheme: dark) {
+      body { background: #171816; color: #eee; }
+      .intro, footer { color: #aaa; }
+      form, .result, .error { background: #22231f; border-color: #3f403a; }
+      textarea { background: #171816; border-color: #666; color: #eee; }
+      .categories li { background: #294333; color: #d9f4e1; }
+      .bar { background: #3b3c37; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>arXiv abstract classifier</h1>
+    <p class="intro">Paste an abstract to estimate its broad research categories. An abstract may belong to more than one.</p>
+
+    <form method="post">
+      {% csrf_token %}
+      <label for="{{ form.abstract.id_for_label }}">{{ form.abstract.label }}</label>
+      {{ form.abstract }}
+      {% for error in form.abstract.errors %}<div class="field-error">{{ error }}</div>{% endfor %}
+      <button type="submit">Classify abstract</button>
+    </form>
+
+    {% if prediction %}
+      <section class="result" aria-live="polite">
+        <h2>Predicted categories</h2>
+        <ul class="categories">
+          {% for category in prediction.categories %}<li>{{ category }}</li>{% endfor %}
+        </ul>
+        <h3>Scores</h3>
+        {% for score in prediction.scores %}
+          <div class="score">
+            <span>{{ score.label }}</span>
+            <span class="bar"><span style="width: {{ score.percent }}%"></span></span>
+            <span class="value">{{ score.percent }}%</span>
+          </div>
+        {% endfor %}
+      </section>
+    {% endif %}
+
+    {% if service_error %}
+      <section class="error" role="alert">
+        <h2>Classifier unavailable</h2>
+        <p>{{ service_error }}</p>
+      </section>
+    {% endif %}
+
+    <footer>For exploration, not authoritative subject indexing. <a href="/api/health/">API status</a></footer>
+  </main>
+</body>
+</html>

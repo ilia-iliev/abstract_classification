@@ -11,6 +11,8 @@ uv run python -m scripts.download_model
 uv run manage.py runserver
 ```
 
+Open <http://127.0.0.1:8000/> for the browser interface. Paste an abstract and the page shows its predicted categories and confidence scores.
+
 `uv run` creates the Python environment and the setup command downloads a model from Hugging Face into `artifacts/model`.
 
 ```bash
@@ -25,6 +27,8 @@ Check that the model loaded:
 curl http://127.0.0.1:8000/api/health/
 # {"status":"ok","classifier_backend":"pytorch"}
 ```
+
+The API fails closed when the model is missing or incompatible: health and classification return HTTP 503 rather than serving substitute predictions.
 
 Classify an abstract:
 

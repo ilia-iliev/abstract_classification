@@ -13,9 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import torch
-from transformers import AutoTokenizer
-
-from classifier.modeling import BACKBONES, MultilabelClassifier
+from classifier.modeling import BACKBONES, MultilabelClassifier, load_tokenizer
 from classifier.preprocessing import MAX_CONTEXT_LENGTH, prepare_abstract
 from scripts.artifacts import write_json
 from scripts.data import LABELS, load_manifest_examples
@@ -129,9 +127,9 @@ def artifact_size(directory):
 
 def cold_load_seconds(directory, repeats):
     code = (
-        "from pathlib import Path; import sys; from classifier.modeling import MultilabelClassifier; "
-        "from scripts.data import LABELS; from transformers import AutoTokenizer; "
-        "import time; start=time.perf_counter(); AutoTokenizer.from_pretrained(sys.argv[1]); "
+        "from pathlib import Path; import sys; from classifier.modeling import MultilabelClassifier, load_tokenizer; "
+        "from scripts.data import LABELS; "
+        "import time; start=time.perf_counter(); load_tokenizer(sys.argv[1]); "
         "MultilabelClassifier.load(Path(sys.argv[1]), len(LABELS)); print(time.perf_counter()-start)"
     )
     values = []
@@ -194,7 +192,7 @@ def measure(frozen, snapshot, holdout_report, output, device=None, repeats=REPEA
     report = {"protocol": {"warmup_iterations": WARMUP_ITERATIONS, "measured_iterations": MEASURED_ITERATIONS, "repeats": repeats, "batches": [1, 32], "buckets": list(BUCKETS), "gpu_synchronization": "before and after every timed iteration"}, "hardware": hardware(), "models": {}}
     for item in freeze["models"]:
         name, directory = item["model"], frozen / item["artifact"]
-        tokenizer = AutoTokenizer.from_pretrained(directory)
+        tokenizer = load_tokenizer(directory)
         lengths = np.asarray([len(tokenizer(text, add_special_tokens=True, truncation=False)["input_ids"]) for text in texts])
         model = MultilabelClassifier.load(directory, len(LABELS)).to(device).eval()
         measurements = {}

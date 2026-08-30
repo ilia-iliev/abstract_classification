@@ -3,9 +3,7 @@ import json
 from pathlib import Path
 
 import numpy as np
-from transformers import AutoTokenizer
-
-from classifier.modeling import MultilabelClassifier
+from classifier.modeling import MultilabelClassifier, load_tokenizer
 from classifier.preprocessing import PREPROCESSING_VERSION
 from scripts.data import load_category_examples, load_uniform_examples
 from scripts.train import arrays, device_for, encoded_dataset, metrics, probabilities, tune_thresholds
@@ -20,7 +18,7 @@ def retune(args):
     if metadata.get("preprocessing") != PREPROCESSING_VERSION:
         raise ValueError(f"Model artifact must use {PREPROCESSING_VERSION} preprocessing")
     split = load_uniform_examples(args.dataset, metadata["per_label_target"], metadata["validation_records"], metadata["test_records"]) if metadata.get("sampling") == "uniform" else load_category_examples(args.dataset, metadata["sample_size"], metadata["validation_records"], metadata["test_records"])
-    tokenizer = AutoTokenizer.from_pretrained(model_dir)
+    tokenizer = load_tokenizer(model_dir)
     device = device_for(args)
     model = MultilabelClassifier.load(model_dir, len(metadata["labels"])).to(device)
     validation_texts, y_validation = arrays(split["validation"])
