@@ -22,9 +22,27 @@ BACKBONES = {
 DEFAULT_BACKBONE = "google-bert/bert-base-uncased"
 
 
+MISTRAL_PRETOKENIZER_REGEX = (
+    r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]*[\p{Ll}\p{Lm}\p{Lo}\p{M}]+|"
+    r"[^\r\n\p{L}\p{N}]?[\p{Lu}\p{Lt}\p{Lm}\p{Lo}\p{M}]+[\p{Ll}\p{Lm}\p{Lo}\p{M}]*|"
+    r"\p{N}| ?[^\s\p{L}\p{N}]+[\r\n/]*|\s*[\r\n]+|\s+(?!\S)|\s+"
+)
+
+
 def load_tokenizer(name_or_path):
     """Load tokenizers with the corrected Mistral-family pre-tokenizer regex."""
-    return AutoTokenizer.from_pretrained(name_or_path, fix_mistral_regex=True)
+    config = AutoConfig.from_pretrained(name_or_path)
+    if config.model_type == "qwen3":
+        return AutoTokenizer.from_pretrained(name_or_path, fix_mistral_regex=True)
+    if config.model_type == "gemma3_text":
+        tokenizer = AutoTokenizer.from_pretrained(name_or_path, fix_mistral_regex=False)
+        import tokenizers
+
+        tokenizer.backend_tokenizer.pre_tokenizer = tokenizers.pre_tokenizers.Split(
+            pattern=tokenizers.Regex(MISTRAL_PRETOKENIZER_REGEX), behavior="isolated"
+        )
+        return tokenizer
+    return AutoTokenizer.from_pretrained(name_or_path)
 
 
 def backbone_spec(name):

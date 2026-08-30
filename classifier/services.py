@@ -96,7 +96,7 @@ class AbstractClassifier:
                 model = MultilabelClassifier.load(self.artifact_dir, len(labels)).to(
                     requested_device
                 )
-            except (OSError, RuntimeError, ValueError) as error:
+            except (OSError, RuntimeError, TypeError, ValueError) as error:
                 self._load_error = f"Cannot load model artifact at {self.artifact_dir}: {error}"
                 logger.exception(self._load_error)
                 return
